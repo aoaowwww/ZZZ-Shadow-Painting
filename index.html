@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>绝区零 · 影画图鉴</title>
+  <style>
+:root {
+  --ink: #0b0b0d;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  background:
+    radial-gradient(1100px 700px at 75% -10%, rgba(255, 180, 58, 0.07), transparent 62%),
+    radial-gradient(900px 640px at 8% 112%, rgba(53, 224, 200, 0.05), transparent 62%),
+    radial-gradient(ellipse at 50% 38%, #14141a 0%, #0b0b0d 56%, #050506 100%);
+}
+
+/* 网格 + 暗角，压在内容后面 */
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+}
+
+body::before {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.028) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse at 50% 45%, #000 30%, transparent 78%);
+  -webkit-mask-image: radial-gradient(ellipse at 50% 45%, #000 30%, transparent 78%);
+}
+
+body::after {
+  background: radial-gradient(ellipse at 50% 46%, transparent 52%, rgba(0, 0, 0, 0.5) 100%);
+}
+
+.viewport {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.viewport.is-dragging {
+  cursor: grabbing;
+}
+
+.viewport.is-drop {
+  outline: 1px dashed rgba(232, 228, 220, 0.35);
+  outline-offset: -12px;
+}
+
+.world {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+}
+
+.group {
+  position: absolute;
+  left: 0;
+  top: 0;
+  perspective: 1100px;
+  transform: translate3d(0, 0, 0) scale(1);
+  transform-origin: center center;
+  will-change: transform;
+}
+
+.group-frame {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transform: translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg);
+  transition: transform 0.38s cubic-bezier(0.22, 0.61, 0.36, 1);
+  will-change: transform;
+  perspective: 1100px;
+  perspective-origin: 50% 50%;
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #000;
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(232, 228, 220, 0.08);
+  transform-origin: 50% 50%;
+  transform: translate3d(0, 0, 0);
+  will-change: transform, opacity;
+}
+
+.layer img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  pointer-events: none;
+  -webkit-user-drag: none;
+  backface-visibility: hidden;
+}
+
+.layer-base {
+  z-index: 1;
+  opacity: 1;
+}
+
+.layer-mid {
+  z-index: 2;
+  opacity: 0;
+}
+
+.layer-top {
+  z-index: 3;
+  opacity: 0;
+}
+
+/* 聚焦卡片：更亮的描边 + 琥珀色氛围光；非聚焦整体压暗拉开层次 */
+.group.is-focus .layer {
+  box-shadow:
+    0 26px 64px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(240, 236, 228, 0.16),
+    0 0 46px rgba(255, 180, 58, 0.1);
+}
+
+.group:not(.is-focus) {
+  opacity: 0.88;
+}
+
+/* 卡片入场：逐张淡入（只动 opacity，不干扰定位 transform） */
+.group {
+  animation: cardIn 0.55s ease backwards;
+  animation-delay: calc(var(--i, 0) * 55ms);
+}
+
+@keyframes cardIn {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ── HUD ── */
+.hud {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 26px 34px;
+  pointer-events: none;
+  user-select: none;
+  animation: hudIn 0.7s ease both;
+}
+
+.hud-bottom {
+  bottom: 0;
+  align-items: flex-end;
+  justify-content: center;
+  animation-delay: 0.12s;
+}
+
+@keyframes hudIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+.hud-dots {
+  display: flex;
+  gap: 12px;
+  padding-bottom: 10px;
+}
+
+.dot {
+  pointer-events: auto;
+  width: 9px;
+  height: 9px;
+  padding: 0;
+  border: none;
+  cursor: pointer;
+  background: rgba(240, 236, 228, 0.18);
+  transform: rotate(45deg);
+  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.dot:hover {
+  background: rgba(240, 236, 228, 0.45);
+}
+
+.dot.on {
+  background: #ffb43a;
+  box-shadow: 0 0 10px rgba(255, 180, 58, 0.55);
+  transform: rotate(45deg) scale(1.25);
+}
+
+@media (max-height: 620px) {
+  .hud {
+    padding: 16px 22px;
+  }
+}
+
+.group:not(.is-focus) {
+  transition: none !important;
+}
+
+.group:not(.is-focus) .group-frame,
+.group:not(.is-focus) .layer {
+  transition: none !important;
+  transform: translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg) scale(1) !important;
+}
+
+.group:not(.is-focus) .layer-base {
+  opacity: 1 !important;
+}
+
+.group:not(.is-focus) .layer-mid,
+.group:not(.is-focus) .layer-top {
+  opacity: 0 !important;
+}
+
+.group.is-focus .group-frame,
+.group.is-focus .layer {
+  transition:
+    transform 0.38s cubic-bezier(0.22, 0.61, 0.36, 1),
+    opacity 0.28s ease;
+}
+
+.group.is-focus.is-live .group-frame,
+.group.is-focus.is-live .layer {
+  transition-duration: 0.08s;
+}
+
+.viewport.is-dragging .group-frame,
+.viewport.is-dragging .layer {
+  transition: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .group-frame,
+  .layer {
+    transition: none !important;
+  }
+  .group,
+  .hud {
+    animation: none !important;
+  }
+  .dot {
+    transition: none !important;
+  }
+}
+  </style>
+</head>
+<body>
+  <div class="viewport" id="viewport">
+    <div class="world" id="world"></div>
+  </div>
+
+  <footer class="hud hud-bottom">
+    <div class="hud-dots" id="hudDots"></div>
+  </footer>
+
+  <script>
+(() => {
+  const ASPECT = 2710 / 4915;
+  const viewport = document.getElementById("viewport");
+  const world = document.getElementById("world");
+  const hudDots = document.getElementById("hudDots");
+  let dots = [];
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /** @type {{id:string,layers:string[]}[]} */
+  let GROUPS = [];
+  let N = 1;
+  let objectUrls = [];
+
+  function revokeUrls() {
+    for (const u of objectUrls) {
+      try { URL.revokeObjectURL(u); } catch (_) {}
+    }
+    objectUrls = [];
+  }
+
+  function trackUrl(u) {
+    if (String(u).startsWith("blob:")) objectUrls.push(u);
+    return u;
+  }
+
+  function canLoad(src) {
+    return new Promise((resolve) => {
+      const im = new Image();
+      im.onload = () => resolve(true);
+      im.onerror = () => resolve(false);
+      im.src = src;
+    });
+  }
+
+  function decodeHref(href) {
+    try { return decodeURIComponent(href); } catch (_) { return href; }
+  }
+
+  function parseYinghua(nameOrPath) {
+    const clean = String(nameOrPath).split("?")[0].split("#")[0];
+    const m = clean.match(/影画\s*([123])/i);
+    if (!m) return null;
+    return { path: clean, layer: Number(m[1]) };
+  }
+
+  function groupKeyOf(path, fallback) {
+    const parts = String(path).replace(/\\/g, "/").split("/").filter(Boolean);
+    if (parts.length >= 2) return parts[0];
+    if (fallback) return fallback;
+    return String(path).replace(/[-_\s]*影画\s*[123].*$/i, "").replace(/\.[a-z0-9]+$/i, "") || path;
+  }
+
+  function groupByYinghua(items) {
+    // items: { path, url?, folder? }
+    const map = new Map();
+    for (const it of items) {
+      const hit = parseYinghua(it.path);
+      if (!hit) continue;
+      const key = groupKeyOf(it.path, it.folder) || it.folder || hit.path;
+      if (!map.has(key)) map.set(key, { id: key, slots: {} });
+      const entry = map.get(key);
+      const prev = entry.slots[hit.layer];
+      const url = it.url || it.path;
+      if (!prev || String(it.path).length < String(prev.path).length) {
+        entry.slots[hit.layer] = { path: it.path, url };
+      }
+    }
+    const groups = [];
+    for (const { id, slots } of map.values()) {
+      if (slots[1] && slots[2] && slots[3]) {
+        groups.push({
+          id,
+          layers: [trackUrl(slots[1].url), trackUrl(slots[2].url), trackUrl(slots[3].url)],
+        });
+      }
+    }
+    groups.sort((a, b) => a.id.localeCompare(b.id, "zh-Hans-CN"));
+    return groups;
+  }
+
+  /* ── 目录列表（环境支持时，丢文件夹刷新即出） ── */
+  async function listHrefs(url) {
+    const base = !url || url === "./" ? "./" : String(url).replace(/\/?$/, "/");
+    const candidates = [base, base + "?list"];
+    const hrefs = [];
+    const seen = new Set();
+    for (const u of candidates) {
+      try {
+        const res = await fetch(u, { cache: "no-store" });
+        if (!res.ok) continue;
+        const text = await res.text();
+        if (!text.includes("<")) continue;
+        const doc = new DOMParser().parseFromString(text, "text/html");
+        for (const a of doc.querySelectorAll("a[href]")) {
+          const href = decodeHref(a.getAttribute("href") || "");
+          if (!href || href.startsWith("#") || href.startsWith("?")) continue;
+          if (/^https?:/i.test(href) || href.startsWith("//")) continue;
+          const name = href.split("?")[0].split("#")[0].replace(/^\.\//, "");
+          if (!name || /(^|\/)(index\.html|files\.json|manifest\.json|refresh\.ps1)$/i.test(name)) continue;
+          if (name.split("/").some((s) => s.startsWith("_") || s.startsWith("."))) continue;
+          if (seen.has(name)) continue;
+          seen.add(name);
+          hrefs.push(href);
+        }
+        if (hrefs.length) break;
+      } catch (_) {}
+    }
+    return hrefs;
+  }
+
+  async function collectFromListing() {
+    const items = [];
+    const walk = async (folder) => {
+      const hrefs = await listHrefs(folder ? folder + "/" : "./");
+      const subdirs = [];
+      for (const href of hrefs) {
+        const raw = href.replace(/^\.\//, "");
+        const isDir = href.endsWith("/") || !/\.[a-z0-9]+$/i.test((raw.split("/").pop() || "").split("?")[0]);
+        const path = raw.replace(/\/$/, "");
+        if (!path) continue;
+        if (isDir) {
+          const top = path.split("/")[0];
+          if (top && top !== folder && !subdirs.includes(top)) subdirs.push(top);
+          continue;
+        }
+        if (/\.(png|jpe?g|webp|gif|avif)$/i.test(path)) {
+          items.push({ path, url: path });
+        }
+      }
+      if (!folder) {
+        for (const sub of subdirs) await walk(sub);
+      }
+    };
+    await walk("");
+    return items;
+  }
+
+  /* ── list.txt：自己维护的纯文本清单（一行一个文件夹或一条路径） ── */
+  async function collectFromListTxt() {
+    const items = [];
+    let text = "";
+    for (const name of ["list.txt", "影画.txt", "清单.txt"]) {
+      try {
+        const res = await fetch(name, { cache: "no-store" });
+        if (res.ok) {
+          text = await res.text();
+          break;
+        }
+      } catch (_) {}
+    }
+    if (!text) return items;
+
+    const lines = text
+      .split(/\r?\n/)
+      .map((s) => s.trim())
+      .filter((s) => s && !s.startsWith("#") && !s.startsWith("//"));
+
+    for (const line of lines) {
+      // 完整路径：照/照-影画1.png
+      if (parseYinghua(line) && /\.(png|jpe?g|webp|gif|avif)$/i.test(line)) {
+        items.push({ path: line, url: line });
+        continue;
+      }
+      // 文件夹名：照  或  照/
+      const folder = line.replace(/\/$/, "").replace(/^\.\//, "");
+      if (!folder || folder.includes("..")) continue;
+      for (let i = 1; i <= 3; i++) {
+        let hit = null;
+        for (const ext of ["png", "jpg", "jpeg", "webp"]) {
+          const path = `${folder}/${folder}-影画${i}.${ext}`;
+          if (await canLoad(path)) {
+            hit = path;
+            break;
+          }
+        }
+        // 也支持文件夹里就叫 影画1.png
+        if (!hit) {
+          for (const ext of ["png", "jpg", "jpeg", "webp"]) {
+            const path = `${folder}/影画${i}.${ext}`;
+            if (await canLoad(path)) {
+              hit = path;
+              break;
+            }
+          }
+        }
+        if (hit) items.push({ path: hit, url: hit, folder });
+      }
+    }
+    return items;
+  }
+
+  /* ── files.json 索引 ── */
+  async function collectFromFilesJson() {
+    try {
+      const res = await fetch("files.json", { cache: "no-store" });
+      if (!res.ok) return [];
+      const data = await res.json();
+      const images = (data && Array.isArray(data.images)) ? data.images : [];
+      return images
+        .filter((p) => p && !p.split("/").some((s) => s.startsWith("_") || s.startsWith(".")))
+        .map((p) => ({ path: p, url: p }));
+    } catch (_) {
+      return [];
+    }
+  }
+
+  /* ── 本地文件夹句柄：授权一次，之后刷新自动重扫 ── */
+  function idbOpen() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open("yinghua-gallery", 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains("kv")) db.createObjectStore("kv");
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async function idbGet(key) {
+    try {
+      const db = await idbOpen();
+      return await new Promise((resolve, reject) => {
+        const tx = db.transaction("kv", "readonly");
+        const req = tx.objectStore("kv").get(key);
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => reject(req.error);
+      });
+    } catch (_) {
+      return null;
+    }
+  }
+
+  async function idbSet(key, value) {
+    try {
+      const db = await idbOpen();
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction("kv", "readwrite");
+        tx.objectStore("kv").put(value, key);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+    } catch (_) {}
+  }
+
+  async function ensurePermission(handle) {
+    if (!handle) return false;
+    try {
+      if (handle.queryPermission) {
+        const q = await handle.queryPermission({ mode: "read" });
+        if (q === "granted") return true;
+        if (handle.requestPermission) {
+          const r = await handle.requestPermission({ mode: "read" });
+          return r === "granted";
+        }
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  async function collectFromDirHandle(rootHandle, prefix = "") {
+    const items = [];
+    if (!rootHandle || !rootHandle.values) return items;
+    for await (const entry of rootHandle.values()) {
+      const name = entry.name;
+      if (name.startsWith("_") || name.startsWith(".")) continue;
+      const rel = prefix ? prefix + "/" + name : name;
+      if (entry.kind === "directory") {
+        const sub = await collectFromDirHandle(entry, rel);
+        items.push(...sub);
+      } else if (/\.(png|jpe?g|webp|gif|avif)$/i.test(name)) {
+        try {
+          const file = await entry.getFile();
+          const url = trackUrl(URL.createObjectURL(file));
+          items.push({ path: rel, url, folder: rel.split("/")[0] });
+        } catch (_) {}
+      }
+    }
+    return items;
+  }
+
+  async function collectFromWebkitEntry(entry, prefix = "") {
+    const items = [];
+    if (!entry) return items;
+    if (entry.isFile) {
+      await new Promise((resolve) => {
+        entry.file((file) => {
+          const rel = prefix ? prefix + "/" + file.name : file.name;
+          if (/\.(png|jpe?g|webp|gif|avif)$/i.test(file.name) && !file.name.startsWith("_")) {
+            const url = trackUrl(URL.createObjectURL(file));
+            items.push({ path: rel, url, folder: rel.split("/")[0] });
+          }
+          resolve();
+        }, resolve);
+      });
+      return items;
+    }
+    if (entry.isDirectory) {
+      const reader = entry.createReader();
+      const readBatch = () => new Promise((resolve) => reader.readEntries(resolve, () => resolve([])));
+      let batch = await readBatch();
+      while (batch && batch.length) {
+        for (const ent of batch) {
+          const rel = prefix ? prefix + "/" + ent.name : ent.name;
+          if (ent.name.startsWith("_") || ent.name.startsWith(".")) continue;
+          const sub = await collectFromWebkitEntry(ent, rel);
+          items.push(...sub);
+        }
+        batch = await readBatch();
+      }
+    }
+    return items;
+  }
+
+  async function liveFilter(groups) {
+    const live = [];
+    for (const g of groups) {
+      const oks = await Promise.all(g.layers.map(canLoad));
+      if (oks.every(Boolean)) live.push(g);
+    }
+    return live;
+  }
+
+  // 内联图片清单：双击 file:// 打开时使用，绕过浏览器对本地 fetch 的拦截
+  // 与 files.json 保持一致（新增角色时两处都要同步改）
+  const INLINE_IMAGES = [
+    "可琳/可琳-影画1.webp",
+    "可琳/可琳-影画2.webp",
+    "可琳/可琳-影画3.webp",
+    "叶瞬光/叶瞬光-影画1.webp",
+    "叶瞬光/叶瞬光-影画2.webp",
+    "叶瞬光/叶瞬光-影画3.webp",
+    "照/照-影画1.webp",
+    "照/照-影画2.webp",
+    "照/照-影画3.webp",
+    "爱丽丝/爱丽丝-影画1.webp",
+    "爱丽丝/爱丽丝-影画2.webp",
+    "爱丽丝/爱丽丝-影画3.webp",
+    "琉音/琉音-影画1.webp",
+    "琉音/琉音-影画2.webp",
+    "琉音/琉音-影画3.webp",
+    "艾莲/艾莲-影画1.webp",
+    "艾莲/艾莲-影画2.webp",
+    "艾莲/艾莲-影画3.webp",
+    "诺姆/诺姆-影画1.webp",
+    "诺姆/诺姆-影画2.webp",
+    "诺姆/诺姆-影画3.webp"
+  ];
+
+  async function discoverGroups() {
+    revokeUrls();
+
+    // file:// 协议下：浏览器禁止 fetch 本地文件，改用内联清单
+    if (location.protocol === "file:") {
+      const items = INLINE_IMAGES.map((p) => ({ path: p, url: p }));
+      return liveFilter(groupByYinghua(items));
+    }
+
+    const items = [];
+
+    // 1) list.txt：丢文件夹后在清单里加一行名字即可
+    const fromList = await collectFromListTxt();
+    if (fromList.length) items.push(...fromList);
+
+    // 2) 本地文件夹句柄（授权过 → 刷新自动重扫）
+    const handle = await idbGet("rootDir");
+    if (handle) {
+      const ok = await ensurePermission(handle);
+      if (ok) {
+        const local = await collectFromDirHandle(handle);
+        if (local.length) items.push(...local);
+      }
+    }
+
+    // 3) 目录列表（服务端支持时自动扫）
+    const listed = await collectFromListing();
+    if (listed.length) items.push(...listed);
+
+    // 4) files.json 快照兜底
+    const jsonItems = await collectFromFilesJson();
+    if (jsonItems.length) items.push(...jsonItems);
+
+    return liveFilter(groupByYinghua(items));
+  }
+
+  async function bindRootHandle(handle) {
+    await idbSet("rootDir", handle);
+    await reload(true);
+  }
+
+  async function pickRootFolder() {
+    if (!window.showDirectoryPicker) return false;
+    try {
+      const handle = await window.showDirectoryPicker({ mode: "read" });
+      await bindRootHandle(handle);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  async function reload(resetView) {
+    GROUPS = await discoverGroups();
+    N = GROUPS.length || 1;
+    if (!GROUPS.length) {
+      build();
+      paintWorld();
+      return;
+    }
+    build();
+    if (resetView) {
+      const t0 = worldForSlot(0);
+      worldX = t0.x;
+      worldY = t0.y;
+      paintWorld();
+      setFocus(focusFromSlot(nearestSlot()));
+      if (Math.abs(continuousIndex()) < 0.35) jumpTo(0);
+    } else {
+      const slot = nearestSlot();
+      jumpTo(Math.min(slot, Math.max(0, N - 1)));
+    }
+  }
+
+  let groups = [];
+  let gw = 0;
+  let gh = 0;
+  let stepX = 0;
+  let stepY = 0;
+
+  let worldX = 0;
+  let worldY = 0;
+  let targetX = 0;
+  let targetY = 0;
+
+  let dragging = false;
+  let pointerId = null;
+  let lastX = 0;
+  let lastY = 0;
+  let downX = 0;
+  let downY = 0;
+  let moved = false;
+
+  let focusIndex = 0;
+  let loopRaf = 0;
+  let parRaf = 0;
+  let parPending = null;
+  let lastWheelAt = 0;
+  let wheelSettled = true;
+
+  const mod = (a, n) => ((a % n) + n) % n;
+
+  function layoutSize() {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    gw = Math.min(vw * 0.52, 560);
+    gh = gw * ASPECT;
+    if (gh > vh * 0.5) {
+      gh = vh * 0.5;
+      gw = gh / ASPECT;
+    }
+    stepY = gh * 0.95;
+    stepX = 0;
+  }
+
+  function pathPos(k) {
+    return { x: 0, y: k * stepY };
+  }
+
+  function build() {
+    world.innerHTML = "";
+    groups = [];
+    layoutSize();
+
+    GROUPS.forEach((g, i) => {
+      const root = document.createElement("div");
+      root.className = "group";
+      root.dataset.index = String(i);
+      root.style.width = `${gw}px`;
+      root.style.height = `${gh}px`;
+
+      const frame = document.createElement("div");
+      frame.className = "group-frame";
+      root.appendChild(frame);
+
+      const names = ["layer layer-base", "layer layer-mid", "layer layer-top"];
+      const layerEls = [];
+
+      for (let li = 0; li < 3; li++) {
+        const fig = document.createElement("figure");
+        fig.className = names[li];
+        const img = document.createElement("img");
+        img.src = g.layers[li];
+        img.alt = "";
+        img.decoding = "async";
+        fig.appendChild(img);
+        frame.appendChild(fig);
+        layerEls.push(fig);
+      }
+
+      world.appendChild(root);
+      root.style.setProperty("--i", String(i));
+      groups.push({
+        el: root,
+        frame,
+        layers: layerEls,
+        charIndex: i,
+        slot: i,
+        x: 0,
+        y: 0,
+        w: gw,
+        h: gh,
+        scale: 1,
+      });
+    });
+
+    // 底部菱形导航点：点击直达对应角色
+    hudDots.innerHTML = "";
+    dots = [];
+    GROUPS.forEach((g, i) => {
+      const d = document.createElement("button");
+      d.className = "dot";
+      d.title = g.id;
+      d.addEventListener("click", () => {
+        const k = i + N * Math.round((continuousIndex() - i) / N);
+        const t = worldForSlot(k);
+        targetX = t.x;
+        targetY = t.y;
+        wheelSettled = true;
+        ensureLoop();
+      });
+      hudDots.appendChild(d);
+      dots.push(d);
+    });
+  }
+
+  function continuousIndexFrom(wx, wy) {
+    const ty = window.innerHeight / 2 - gh / 2 - wy;
+    return ty / stepY;
+  }
+
+  function continuousIndex() {
+    return continuousIndexFrom(worldX, worldY);
+  }
+
+  function scaleFor(slot, base) {
+    const dist = Math.abs(slot - base);
+    if (dist < 0.45) return 1.14;
+    return Math.max(0.68, 1.14 - dist * 0.16);
+  }
+
+  function reflowSlots() {
+    const base = continuousIndex();
+    for (const g of groups) {
+      const k = g.charIndex + N * Math.round((base - g.charIndex) / N);
+      g.slot = k;
+      const p = pathPos(k);
+      g.x = p.x;
+      g.y = p.y;
+      const s = scaleFor(k, base);
+      g.scale = s;
+      const dist = Math.abs(k - base);
+      const z = dist < 0.45 ? 30 : Math.max(1, 20 - Math.round(dist * 3));
+      g.el.style.zIndex = String(z);
+      g.el.style.transform = `translate3d(${p.x.toFixed(2)}px, ${p.y.toFixed(2)}px, 0) scale(${s.toFixed(4)})`;
+    }
+  }
+
+  function paintWorld() {
+    world.style.transform = `translate3d(${worldX.toFixed(2)}px, ${worldY.toFixed(2)}px, 0)`;
+    reflowSlots();
+  }
+
+  function focusFromSlot(k) {
+    return mod(k, N);
+  }
+
+  function nearestSlotFrom(wx, wy) {
+    return Math.round(continuousIndexFrom(wx, wy));
+  }
+
+  function nearestSlot() {
+    return nearestSlotFrom(worldX, worldY);
+  }
+
+  function worldForSlot(k) {
+    const p = pathPos(k);
+    return {
+      x: window.innerWidth / 2 - (p.x + gw / 2),
+      y: window.innerHeight / 2 - (p.y + gh / 2),
+    };
+  }
+
+  function updateHud(charIndex) {
+    for (let i = 0; i < dots.length; i++) dots[i].classList.toggle("on", i === charIndex);
+  }
+
+  function setFocus(charIndex) {
+    for (const g of groups) {
+      const on = g.charIndex === charIndex;
+      g.el.classList.toggle("is-focus", on);
+      g.el.style.zIndex = on ? "30" : "1";
+    }
+    updateHud(charIndex);
+    if (focusIndex === charIndex) return;
+    focusIndex = charIndex;
+    for (const g of groups) {
+      if (g.charIndex !== charIndex) {
+        g.el.classList.remove("is-live");
+        g.frame.style.transform = "";
+        for (const layer of g.layers) {
+          layer.style.transform = "";
+          layer.style.opacity = "";
+        }
+      }
+    }
+    resetFocusLayers();
+  }
+
+  function resetFocusLayers() {
+    const g = groups.find((x) => x.charIndex === focusIndex);
+    if (!g) return;
+    g.el.classList.remove("is-live");
+    g.frame.style.transform = "translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg)";
+    g.layers[0].style.opacity = "1";
+    g.layers[1].style.opacity = "0";
+    g.layers[2].style.opacity = "0";
+    g.layers[0].style.transform = "translate3d(0, 0, 0)";
+    g.layers[1].style.transform = "translate3d(0, 0, 0)";
+    g.layers[2].style.transform = "translate3d(0, 0, 0)";
+  }
+
+  const maxShift = () => {
+    const w = window.innerWidth;
+    if (w < 640) return 18;
+    if (w < 960) return 28;
+    return 36;
+  };
+
+  const maxTilt = () => {
+    const w = window.innerWidth;
+    if (w < 640) return 7;
+    return 10;
+  };
+
+  function opacityFromProgress(t) {
+    const top = t <= 0.5 ? 0 : (t - 0.5) / 0.5;
+    const mid = t <= 0.5 ? t / 0.5 : 1;
+    return {
+      top: Math.max(0, Math.min(1, top)),
+      mid: Math.max(0, Math.min(1, mid)),
+    };
+  }
+
+  function applyParallaxNow(clientX, clientY) {
+    if (dragging || !wheelSettled) return;
+    const g = groups.find((x) => x.charIndex === focusIndex);
+    if (!g || !g.el.classList.contains("is-focus")) return;
+
+    g.el.classList.add("is-live");
+
+    const gx = worldX + g.x + g.w / 2;
+    const gy = worldY + g.y + g.h / 2;
+    const nx = Math.max(-1, Math.min(1, (clientX - gx) / (g.w / 2)));
+    const ny = Math.max(-1, Math.min(1, (clientY - gy) / (g.h / 2)));
+
+    const raw = Math.max(Math.abs(nx), Math.abs(ny));
+    const t = Math.max(0, Math.min(1, raw / 0.9));
+
+    const shift = maxShift();
+    const tilt = maxTilt();
+    const baseRotY = nx * tilt;
+    const baseRotX = -ny * tilt;
+    const depths = [0.22, 0.48, 0.78];
+
+    // 整张卡片随光标做 3D 倾斜（透视挂在 .group 上），
+    // 各图层只做位移/景深，各自不再单独旋转 ——
+    // 这样任何图层（含最上层的影画3）都不会被自身 overflow:hidden 裁掉角。
+    g.frame.style.transform =
+      `translate3d(0, 0, 0) rotateX(${baseRotX.toFixed(2)}deg) rotateY(${baseRotY.toFixed(2)}deg)`;
+
+    for (let i = 0; i < 3; i++) {
+      const layer = g.layers[i];
+      const depth = depths[i];
+      const tx = nx * shift * depth;
+      const ty = ny * shift * depth * 0.7;
+      const z = depth * 28 * t;
+      const scale = 1 + depth * 0.02 * t;
+      layer.style.transform =
+        `translate3d(${tx.toFixed(2)}px, ${ty.toFixed(2)}px, ${z.toFixed(2)}px) ` +
+        `scale(${scale.toFixed(4)})`;
+    }
+
+    const op = opacityFromProgress(t);
+    g.layers[2].style.opacity = op.top.toFixed(3);
+    g.layers[1].style.opacity = op.mid.toFixed(3);
+    g.layers[0].style.opacity = "1";
+  }
+
+  function scheduleParallax(clientX, clientY) {
+    parPending = { x: clientX, y: clientY };
+    if (parRaf) return;
+    parRaf = requestAnimationFrame(() => {
+      parRaf = 0;
+      if (parPending) {
+        const p = parPending;
+        parPending = null;
+        applyParallaxNow(p.x, p.y);
+      }
+    });
+  }
+
+  function ensureLoop() {
+    if (loopRaf) return;
+    const tick = () => {
+      if (!dragging && !wheelSettled && performance.now() - lastWheelAt > 110) {
+        wheelSettled = true;
+        const k = nearestSlotFrom(targetX, targetY);
+        const t = worldForSlot(k);
+        targetX = t.x;
+        targetY = t.y;
+        setFocus(focusFromSlot(k));
+      }
+
+      if (!dragging) {
+        const ease = reduceMotion ? 1 : 0.14;
+        const dx = targetX - worldX;
+        const dy = targetY - worldY;
+        if (Math.abs(dx) < 0.08 && Math.abs(dy) < 0.08) {
+          worldX = targetX;
+          worldY = targetY;
+          paintWorld();
+          if (wheelSettled) setFocus(focusFromSlot(nearestSlot()));
+          loopRaf = 0;
+          return;
+        }
+        worldX += dx * ease;
+        worldY += dy * ease;
+        paintWorld();
+        if (!wheelSettled) setFocus(focusFromSlot(nearestSlot()));
+      } else {
+        paintWorld();
+      }
+      loopRaf = requestAnimationFrame(tick);
+    };
+    loopRaf = requestAnimationFrame(tick);
+  }
+
+  function onPointerDown(e) {
+    if (e.button != null && e.button !== 0) return;
+    dragging = true;
+    moved = false;
+    pointerId = e.pointerId;
+    lastX = downX = e.clientX;
+    lastY = downY = e.clientY;
+    parPending = null;
+    if (parRaf) {
+      cancelAnimationFrame(parRaf);
+      parRaf = 0;
+    }
+    targetX = worldX;
+    targetY = worldY;
+    viewport.classList.add("is-dragging");
+    const g = groups.find((x) => x.charIndex === focusIndex);
+    if (g) g.el.classList.remove("is-live");
+    viewport.setPointerCapture?.(e.pointerId);
+  }
+
+  function onPointerMove(e) {
+    if (!dragging) {
+      scheduleParallax(e.clientX, e.clientY);
+      return;
+    }
+    if (pointerId != null && e.pointerId !== pointerId) return;
+    const dx = e.clientX - lastX;
+    const dy = e.clientY - lastY;
+    if (Math.abs(e.clientX - downX) > 4 || Math.abs(e.clientY - downY) > 4) moved = true;
+    worldX += dx;
+    worldY += dy;
+    targetX = worldX;
+    targetY = worldY;
+    lastX = e.clientX;
+    lastY = e.clientY;
+    paintWorld();
+  }
+
+  function onPointerUp(e) {
+    if (!dragging || (pointerId != null && e.pointerId !== pointerId)) return;
+    dragging = false;
+    pointerId = null;
+    viewport.classList.remove("is-dragging");
+    try { viewport.releasePointerCapture?.(e.pointerId); } catch (_) {}
+
+    // 单击且没有内容 / 未授权本地夹时：请求绑定文件夹，之后刷新自动更新
+    if (!moved && !groups.length) {
+      pickRootFolder();
+      return;
+    }
+
+    const k = nearestSlot();
+    const t = worldForSlot(k);
+    targetX = t.x;
+    targetY = t.y;
+    setFocus(focusFromSlot(k));
+    wheelSettled = true;
+    ensureLoop();
+  }
+
+  function onWheel(e) {
+    e.preventDefault();
+    if (dragging) return;
+    let delta = (e.deltaY + e.deltaX * 0.5) / 220;
+    if (e.deltaMode === 1) delta /= 4;
+    delta = Math.max(-0.35, Math.min(0.35, delta));
+    if (!delta) return;
+    wheelSettled = false;
+    lastWheelAt = performance.now();
+    const k = continuousIndexFrom(targetX, targetY) + delta;
+    const t = worldForSlot(k);
+    targetX = t.x;
+    targetY = t.y;
+    ensureLoop();
+  }
+
+  function jumpTo(slot) {
+    const t = worldForSlot(slot);
+    worldX = t.x;
+    worldY = t.y;
+    targetX = t.x;
+    targetY = t.y;
+    wheelSettled = true;
+    paintWorld();
+    setFocus(focusFromSlot(slot));
+    if (loopRaf) {
+      cancelAnimationFrame(loopRaf);
+      loopRaf = 0;
+    }
+  }
+
+  /* 拖入文件夹：立即识别，并记住路径便于下次刷新 */
+  viewport.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    viewport.classList.add("is-drop");
+  });
+  viewport.addEventListener("dragleave", () => viewport.classList.remove("is-drop"));
+  viewport.addEventListener("drop", async (e) => {
+    e.preventDefault();
+    viewport.classList.remove("is-drop");
+    const dt = e.dataTransfer;
+    if (!dt) return;
+
+    // 目录句柄
+    if (dt.items && dt.items[0] && dt.items[0].getAsFileSystemHandle) {
+      try {
+        const h = await dt.items[0].getAsFileSystemHandle();
+        if (h && h.kind === "directory") {
+          await idbSet("rootDir", h);
+          await reload(true);
+          return;
+        }
+      } catch (_) {}
+    }
+
+    // webkit 旧接口
+    const items = [];
+    const entries = [];
+    if (dt.items) {
+      for (const it of dt.items) {
+        const ent = it.webkitGetAsEntry && it.webkitGetAsEntry();
+        if (ent) entries.push(ent);
+      }
+    }
+    for (const ent of entries) {
+      const got = await collectFromWebkitEntry(ent);
+      items.push(...got);
+    }
+    if (items.length) {
+      const live = await liveFilter(groupByYinghua(items));
+      if (live.length) {
+        GROUPS = live;
+        N = live.length;
+        build();
+        jumpTo(0);
+      }
+    }
+  });
+
+  viewport.addEventListener("pointerdown", onPointerDown);
+  viewport.addEventListener("pointermove", onPointerMove);
+  viewport.addEventListener("pointerup", onPointerUp);
+  viewport.addEventListener("pointercancel", onPointerUp);
+  viewport.addEventListener("wheel", onWheel, { passive: false });
+
+  // 方向键切换角色
+  window.addEventListener("keydown", (e) => {
+    if (!groups.length) return;
+    let d = 0;
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") d = 1;
+    else if (e.key === "ArrowLeft" || e.key === "ArrowUp") d = -1;
+    else return;
+    e.preventDefault();
+    const k = nearestSlot() + d;
+    const t = worldForSlot(k);
+    targetX = t.x;
+    targetY = t.y;
+    wheelSettled = true;
+    ensureLoop();
+  });
+
+  window.addEventListener("resize", () => {
+    if (!groups.length) return;
+    const slot = nearestSlot();
+    build();
+    jumpTo(slot);
+  });
+
+  // 双击空白：绑定本地文件夹，此后刷新自动更新
+  viewport.addEventListener("dblclick", () => {
+    if (!groups.length) pickRootFolder();
+  });
+
+  reload(true).then(() => {
+    // 若无本地句柄且列表也空，点一下即可绑定
+  });
+})();
+  </script>
+</body>
+</html>
