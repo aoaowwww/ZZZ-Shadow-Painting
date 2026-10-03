@@ -1,0 +1,5 @@
+# 绝区零 · 影画图鉴 —— 单页站点，全部内容都在首页
+User-agent: *
+Allow: /
+
+Sitemap: https://784399.xyz/sitemap.xml

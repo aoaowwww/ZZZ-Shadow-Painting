@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex" />
+  <title>404 · 这一张影画不在了 | 绝区零 · 影画图鉴</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <style>
+    :root {
+      --ink: #0b0b0d;
+      --paper: #f3f0eb;
+      --amber: #ffb43a;
+      --teal: #35e0c8;
+      --muted: rgba(232, 228, 220, 0.55);
+    }
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      background: var(--ink);
+      color: var(--paper);
+      font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 32px;
+      background:
+        radial-gradient(1100px 700px at 75% -10%, rgba(255, 180, 58, 0.07), transparent 62%),
+        radial-gradient(900px 640px at 8% 112%, rgba(53, 224, 200, 0.05), transparent 62%),
+        radial-gradient(ellipse at 50% 38%, #14141a 0%, #0b0b0d 56%, #050506 100%);
+    }
+    main {
+      width: 100%;
+      max-width: 620px;
+      text-align: center;
+    }
+    .mark {
+      display: inline-flex;
+      gap: 7px;
+      margin-bottom: 34px;
+    }
+    .mark i {
+      display: block;
+      width: 30px;
+      height: 20px;
+      border-radius: 4px;
+    }
+    .mark i:nth-child(1) {
+      border: 2px solid var(--teal);
+      opacity: 0.9;
+    }
+    .mark i:nth-child(2) {
+      background: var(--amber);
+      margin-left: -18px;
+      transform: translateY(5px);
+    }
+    .code {
+      font-size: 96px;
+      font-weight: 600;
+      line-height: 1;
+      letter-spacing: 0.06em;
+      margin: 0 0 6px;
+      background: linear-gradient(180deg, #f3f0eb 30%, rgba(243, 240, 235, 0.35));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    h1 {
+      font-size: 19px;
+      font-weight: 500;
+      margin: 0 0 12px;
+      letter-spacing: 0.02em;
+    }
+    p {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.75;
+      margin: 0 0 34px;
+    }
+    a.home {
+      display: inline-block;
+      padding: 12px 30px;
+      border: 1px solid rgba(255, 180, 58, 0.5);
+      border-radius: 8px;
+      color: var(--amber);
+      text-decoration: none;
+      font-size: 14px;
+      letter-spacing: 0.04em;
+      transition: background 0.2s ease, border-color 0.2s ease;
+    }
+    a.home:hover,
+    a.home:focus-visible {
+      background: rgba(255, 180, 58, 0.1);
+      border-color: var(--amber);
+    }
+    footer {
+      margin-top: 56px;
+      font-size: 12px;
+      color: rgba(232, 228, 220, 0.3);
+      letter-spacing: 0.08em;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="mark" aria-hidden="true"><i></i><i></i></div>
+    <p class="code">404</p>
+    <h1>这一张影画不在了</h1>
+    <p>
+      你要找的页面没有收录，或者链接已经失效。<br />
+      图鉴本身还在，回首页接着翻吧。
+    </p>
+    <a class="home" href="/">← 回到影画图鉴</a>
+    <footer>784399.xyz</footer>
+  </main>
+</body>
+</html>

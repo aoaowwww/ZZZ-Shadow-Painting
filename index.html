@@ -4,6 +4,32 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>绝区零 · 影画图鉴</title>
+  <meta name="description" content="《绝区零》角色影画三层视差图鉴：滚轮或方向键切换角色，光标移动时三层影画产生景深视差与 3D 倾斜。" />
+  <meta name="theme-color" content="#0b0b0d" />
+  <link rel="canonical" href="https://784399.xyz/" />
+
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="apple-touch-icon" href="/favicon.ico" />
+
+  <!-- 分享卡片：微信 / QQ / Telegram / Discord 等靠 og: 取标题与封面 -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="绝区零 · 影画图鉴" />
+  <meta property="og:title" content="绝区零 · 影画图鉴" />
+  <meta property="og:description" content="三层视差图鉴 · 滚轮切换角色 · 光标移动触发景深与 3D 倾斜。" />
+  <meta property="og:url" content="https://784399.xyz/" />
+  <meta property="og:image" content="https://784399.xyz/og-cover.jpg" />
+  <meta property="og:image:type" content="image/jpeg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="三张叠放的影画卡片，配站点标题" />
+  <meta property="og:locale" content="zh_CN" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="绝区零 · 影画图鉴" />
+  <meta name="twitter:description" content="三层视差图鉴 · 滚轮切换角色 · 光标移动触发景深与 3D 倾斜。" />
+  <meta name="twitter:image" content="https://784399.xyz/og-cover.jpg" />
+
   <style>
 :root {
   --ink: #0b0b0d;
@@ -131,6 +157,13 @@ body::after {
   pointer-events: none;
   -webkit-user-drag: none;
   backface-visibility: hidden;
+  /* 懒加载：src 就位前先透明，加载完成后淡入，避免半张图突然弹出 */
+  opacity: 0;
+  transition: opacity 0.45s ease;
+}
+
+.layer img.is-loaded {
+  opacity: 1;
 }
 
 .layer-base {
@@ -271,6 +304,125 @@ body::after {
   transition: none !important;
 }
 
+/* ── 初始化失败 / 零素材时的提示（JS 侧兜底，避免留下纯黑页）── */
+.notice {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 90;
+  max-width: 440px;
+  padding: 26px 32px;
+  text-align: center;
+  border: 1px solid rgba(232, 228, 220, 0.12);
+  border-radius: 12px;
+  background: rgba(16, 16, 20, 0.94);
+}
+
+.notice[hidden] {
+  display: none;
+}
+
+.notice p {
+  margin: 0;
+  color: rgba(232, 228, 220, 0.62);
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+/* ── 无 JS 兜底：<noscript> 里的内容 ── */
+.fallback {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  overflow: auto;
+  padding: 12vh 32px 48px;
+  background: var(--ink);
+  text-align: center;
+}
+
+.fallback h1 {
+  font-size: 22px;
+  font-weight: 500;
+  margin: 0 0 14px;
+  color: #f3f0eb;
+}
+
+.fallback p {
+  max-width: 520px;
+  margin: 0 auto 10px;
+  color: rgba(232, 228, 220, 0.55);
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+.fallback ul {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  list-style: none;
+  padding: 0;
+  margin: 26px 0 0;
+}
+
+.fallback a {
+  display: inline-block;
+  padding: 9px 20px;
+  border: 1px solid rgba(255, 180, 58, 0.4);
+  border-radius: 8px;
+  color: #ffb43a;
+  text-decoration: none;
+  font-size: 13px;
+}
+
+.fallback a:hover {
+  background: rgba(255, 180, 58, 0.1);
+  border-color: #ffb43a;
+}
+
+/* ── 懒加载期间的占位骨架 / 素材缺失提示 ── */
+.layer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    rgba(255, 255, 255, 0.015) 32%,
+    rgba(255, 255, 255, 0.055) 50%,
+    rgba(255, 255, 255, 0.015) 68%
+  );
+  background-size: 220% 100%;
+  animation: layerWait 1.6s linear infinite;
+  pointer-events: none;
+}
+
+.layer.is-ready::after {
+  display: none;
+}
+
+/* 某层取不到时给个明确交代，而不是留一块纯黑 */
+.layer.is-missing::after {
+  content: "素材缺失";
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  animation: none;
+  color: rgba(232, 228, 220, 0.3);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+}
+
+@keyframes layerWait {
+  from {
+    background-position: 190% 0;
+  }
+  to {
+    background-position: -90% 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .group-frame,
   .layer {
@@ -282,6 +434,12 @@ body::after {
   }
   .dot {
     transition: none !important;
+  }
+  .layer::after {
+    animation: none;
+  }
+  .layer img {
+    transition: none;
   }
 }
   </style>
@@ -295,14 +453,40 @@ body::after {
     <div class="hud-dots" id="hudDots"></div>
   </footer>
 
+  <div class="notice" id="notice" hidden></div>
+
+  <noscript>
+    <div class="fallback">
+      <h1>绝区零 · 影画图鉴</h1>
+      <p>本站的视差图鉴依赖 JavaScript 渲染。请允许 JavaScript 后刷新，或直接点下面的直链查看素材。</p>
+      <ul>
+        <li><a href="可琳/可琳-影画3.webp">可琳</a></li>
+        <li><a href="叶瞬光/叶瞬光-影画3.webp">叶瞬光</a></li>
+        <li><a href="照/照-影画3.webp">照</a></li>
+        <li><a href="爱丽丝/爱丽丝-影画3.webp">爱丽丝</a></li>
+        <li><a href="琉音/琉音-影画3.webp">琉音</a></li>
+        <li><a href="艾莲/艾莲-影画3.webp">艾莲</a></li>
+        <li><a href="诺姆/诺姆-影画3.webp">诺姆</a></li>
+      </ul>
+    </div>
+  </noscript>
+
   <script>
 (() => {
   const ASPECT = 2710 / 4915;
   const viewport = document.getElementById("viewport");
   const world = document.getElementById("world");
   const hudDots = document.getElementById("hudDots");
+  const noticeEl = document.getElementById("notice");
   let dots = [];
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* 出问题时给个交代。整站是 JS 渲染的，静默失败 = 用户看到一块纯黑。 */
+  function showNotice(msg) {
+    if (!noticeEl) return;
+    noticeEl.textContent = msg;
+    noticeEl.hidden = false;
+  }
 
   /** @type {{id:string,layers:string[]}[]} */
   let GROUPS = [];
@@ -502,28 +686,53 @@ body::after {
     }
   }
 
-  /* ── 本地文件夹句柄：授权一次，之后刷新自动重扫 ── */
+  /* ── 本地文件夹句柄：授权一次，之后刷新自动重扫 ──
+     ⚠️ indexedDB.open() 在存储被禁用时会「既不触发 onsuccess 也不触发 onerror」——
+     无痕模式、Safari「阻止所有 Cookie」、部分受限/无头环境都会这样，Promise 就此永远挂着。
+     而 idbGet 一旦挂住，discoverGroups() 后面几步（尤其是 files.json）就永远走不到，
+     整页会是纯黑。所以这里的每一次 IDB 交互都必须有自己的超时兜底。 */
+  const IDB_TIMEOUT = 1200;
+
+  function withTimeout(promise, ms, fallback) {
+    return Promise.race([
+      promise,
+      new Promise((resolve) => setTimeout(() => resolve(fallback), ms)),
+    ]);
+  }
+
   function idbOpen() {
     return new Promise((resolve, reject) => {
-      const req = indexedDB.open("yinghua-gallery", 1);
+      let req;
+      try {
+        req = indexedDB.open("yinghua-gallery", 1);
+      } catch (err) {
+        reject(err);
+        return;
+      }
       req.onupgradeneeded = () => {
         const db = req.result;
         if (!db.objectStoreNames.contains("kv")) db.createObjectStore("kv");
       };
       req.onsuccess = () => resolve(req.result);
       req.onerror = () => reject(req.error);
+      req.onblocked = () => reject(new Error("indexedDB blocked"));
     });
   }
 
   async function idbGet(key) {
     try {
-      const db = await idbOpen();
-      return await new Promise((resolve, reject) => {
-        const tx = db.transaction("kv", "readonly");
-        const req = tx.objectStore("kv").get(key);
-        req.onsuccess = () => resolve(req.result || null);
-        req.onerror = () => reject(req.error);
-      });
+      const db = await withTimeout(idbOpen(), IDB_TIMEOUT, null);
+      if (!db) return null;
+      return await withTimeout(
+        new Promise((resolve, reject) => {
+          const tx = db.transaction("kv", "readonly");
+          const req = tx.objectStore("kv").get(key);
+          req.onsuccess = () => resolve(req.result || null);
+          req.onerror = () => reject(req.error);
+        }),
+        IDB_TIMEOUT,
+        null
+      );
     } catch (_) {
       return null;
     }
@@ -531,13 +740,18 @@ body::after {
 
   async function idbSet(key, value) {
     try {
-      const db = await idbOpen();
-      await new Promise((resolve, reject) => {
-        const tx = db.transaction("kv", "readwrite");
-        tx.objectStore("kv").put(value, key);
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => reject(tx.error);
-      });
+      const db = await withTimeout(idbOpen(), IDB_TIMEOUT, null);
+      if (!db) return;
+      await withTimeout(
+        new Promise((resolve, reject) => {
+          const tx = db.transaction("kv", "readwrite");
+          tx.objectStore("kv").put(value, key);
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => reject(tx.error);
+        }),
+        IDB_TIMEOUT,
+        null
+      );
     } catch (_) {}
   }
 
@@ -545,10 +759,10 @@ body::after {
     if (!handle) return false;
     try {
       if (handle.queryPermission) {
-        const q = await handle.queryPermission({ mode: "read" });
+        const q = await withTimeout(handle.queryPermission({ mode: "read" }), IDB_TIMEOUT, "denied");
         if (q === "granted") return true;
         if (handle.requestPermission) {
-          const r = await handle.requestPermission({ mode: "read" });
+          const r = await withTimeout(handle.requestPermission({ mode: "read" }), IDB_TIMEOUT, "denied");
           return r === "granted";
         }
       }
@@ -610,14 +824,14 @@ body::after {
     return items;
   }
 
-  async function liveFilter(groups) {
-    const live = [];
-    for (const g of groups) {
-      const oks = await Promise.all(g.layers.map(canLoad));
-      if (oks.every(Boolean)) live.push(g);
-    }
-    return live;
-  }
+  /* 这里原先有个 liveFilter()：建 DOM 之前先把每张图完整下载一遍做存活探测，
+     而且是按组 for-await 串行等的 —— 结果就是首屏必须等完所有大图才肯渲染，
+     白屏时长等于总下载时长（优化前是 21 张 / 10.3 MB）。
+
+     现在改成「先建 DOM，图片按窗口懒加载」：
+       · 某层取不到 -> 该层盖一块 is-missing 占位（见 CSS），只坏一格，不拖累整页
+       · files.json 由 _tools/resize.py 从实际目录生成，路径本身可信
+     探活逻辑只保留给 list.txt 里那些需要猜扩展名的模糊路径（见 collectFromListTxt）。 */
 
   // 内联图片清单：双击 file:// 打开时使用，绕过浏览器对本地 fetch 的拦截
   // 与 files.json 保持一致（新增角色时两处都要同步改）
@@ -651,12 +865,12 @@ body::after {
     // file:// 协议下：浏览器禁止 fetch 本地文件，改用内联清单
     if (location.protocol === "file:") {
       const items = INLINE_IMAGES.map((p) => ({ path: p, url: p }));
-      return liveFilter(groupByYinghua(items));
+      return groupByYinghua(items);
     }
 
     const items = [];
 
-    // 1) list.txt：丢文件夹后在清单里加一行名字即可
+    // 1) list.txt：本地手写清单，一行一个文件夹名或图片相对路径
     const fromList = await collectFromListTxt();
     if (fromList.length) items.push(...fromList);
 
@@ -670,15 +884,20 @@ body::after {
       }
     }
 
-    // 3) 目录列表（服务端支持时自动扫）
-    const listed = await collectFromListing();
-    if (listed.length) items.push(...listed);
-
-    // 4) files.json 快照兜底
+    // 3) files.json —— 静态托管（GitHub Pages / 对象存储）上唯一可靠的一路。
+    //    提前到目录探测之前，是因为下面第 4 步要按它的结果决定跑不跑。
     const jsonItems = await collectFromFilesJson();
     if (jsonItems.length) items.push(...jsonItems);
 
-    return liveFilter(groupByYinghua(items));
+    // 4) 目录列表探测：只在 files.json 没命中时才试。
+    //    GitHub Pages 对 ./ 和 ./?list 都会返回 index.html（200），
+    //    所以无条件调用等于白白多拉两遍首页 —— 旧版就是这么干的。
+    if (!jsonItems.length) {
+      const listed = await collectFromListing();
+      if (listed.length) items.push(...listed);
+    }
+
+    return groupByYinghua(items);
   }
 
   async function bindRootHandle(handle) {
@@ -782,17 +1001,26 @@ body::after {
 
       const names = ["layer layer-base", "layer layer-mid", "layer layer-top"];
       const layerEls = [];
+      const imgEls = [];
 
       for (let li = 0; li < 3; li++) {
         const fig = document.createElement("figure");
         fig.className = names[li];
         const img = document.createElement("img");
-        img.src = g.layers[li];
+        // 这里刻意不写 img.src：等 ensureLayers() 判断这张卡进入预载窗口后再赋值。
+        // 否则 7 张卡 × 3 层 = 21 张大图会在建 DOM 时被一次性拉下来。
+        img.dataset.src = g.layers[li];
         img.alt = "";
         img.decoding = "async";
+        img.addEventListener("load", () => {
+          img.classList.add("is-loaded");
+          fig.classList.add("is-ready");
+        });
+        img.addEventListener("error", () => fig.classList.add("is-missing"));
         fig.appendChild(img);
         frame.appendChild(fig);
         layerEls.push(fig);
+        imgEls.push(img);
       }
 
       world.appendChild(root);
@@ -801,6 +1029,8 @@ body::after {
         el: root,
         frame,
         layers: layerEls,
+        imgs: imgEls,
+        started: [false, false, false],
         charIndex: i,
         slot: i,
         x: 0,
@@ -846,6 +1076,37 @@ body::after {
     return Math.max(0.68, 1.14 - dist * 0.16);
   }
 
+  /* ── 分层懒加载 ──
+     关键前提：CSS 里 .group:not(.is-focus) 的 .layer-mid / .layer-top 恒为
+     opacity: 0，也就是说只有「聚焦卡」才可能露出影画2、影画3，
+     滑动途中掠过的卡片只看得到影画1（base 层）。
+
+     所以按层给不同窗口：
+       base 层  -> 聚焦卡前后各 1.7 个卡片位，滑动时不至于看到空卡
+       mid/top  -> 只给聚焦卡自己拉，其余等它们成为焦点再说
+
+     首屏请求量由此从「21 张全拉」降到「最多 3 张 base + 2 张 mid/top」。 */
+  const BASE_WINDOW = 1.7;
+  const TOP_WINDOW = 0.55;
+
+  function loadLayer(g, li) {
+    if (g.started[li]) return;
+    g.started[li] = true;
+    const img = g.imgs[li];
+    if (img && img.dataset.src) img.src = img.dataset.src;
+  }
+
+  function ensureLayers(base) {
+    for (const g of groups) {
+      const dist = Math.abs(g.slot - base);
+      if (dist <= BASE_WINDOW) loadLayer(g, 0);
+      if (dist <= TOP_WINDOW) {
+        loadLayer(g, 1);
+        loadLayer(g, 2);
+      }
+    }
+  }
+
   function reflowSlots() {
     const base = continuousIndex();
     for (const g of groups) {
@@ -861,6 +1122,8 @@ body::after {
       g.el.style.zIndex = String(z);
       g.el.style.transform = `translate3d(${p.x.toFixed(2)}px, ${p.y.toFixed(2)}px, 0) scale(${s.toFixed(4)})`;
     }
+    // 槽位算完才知道谁离焦点近，这时再决定哪些图层该发请求
+    ensureLayers(base);
   }
 
   function paintWorld() {
@@ -1172,10 +1435,10 @@ body::after {
       items.push(...got);
     }
     if (items.length) {
-      const live = await liveFilter(groupByYinghua(items));
-      if (live.length) {
-        GROUPS = live;
-        N = live.length;
+      const found = groupByYinghua(items);
+      if (found.length) {
+        GROUPS = found;
+        N = found.length;
         build();
         jumpTo(0);
       }
@@ -1216,9 +1479,16 @@ body::after {
     if (!groups.length) pickRootFolder();
   });
 
-  reload(true).then(() => {
-    // 若无本地句柄且列表也空，点一下即可绑定
-  });
+  reload(true)
+    .then(() => {
+      if (!GROUPS.length) {
+        showNotice("没有读到任何影画素材。请确认 files.json 与目录是否同步，然后刷新重试。");
+      }
+    })
+    .catch((err) => {
+      console.error("[影画图鉴] 初始化失败：", err);
+      showNotice("图鉴初始化失败，请刷新重试。");
+    });
 })();
   </script>
 </body>
